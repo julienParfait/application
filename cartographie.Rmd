@@ -1,0 +1,240 @@
+---
+title: "Spatial Data Analysis"
+author: "Julien Parfait Bidias Assala"
+date: "`r Sys.Date()`"
+output:
+  beamer_presentation:
+    theme: CambridgeUS
+    colortheme: dolphin
+    keep_tex: true
+    fig_caption: true
+    fonttheme: professionalfonts
+  slidy_presentation: default
+subtitle: "Geospatial analysis with R"
+header-includes:
+- \usepackage{ragged2e}
+- \justifying
+- \usepackage{caption}
+- \usepackage{hyperref}
+- \usepackage{booktabs}
+- \usepackage{graphicx}
+- \usepackage {mathtools}
+- \usepackage{utopia}
+- \usepackage{color}
+- \usepackage{tabularray}
+- \usepackage{natbib}
+- \definecolor{myNewColorA}{RGB}{126,12,110}
+- \definecolor{myNewColorB}{RGB}{165,85,154}
+- \definecolor{myNewColorC}{RGB}{203,158,197}
+- \setbeamercolor*{palette primary}{bg=myNewColorC}
+- \setbeamercolor*{palette secondary}{bg=myNewColorB, fg = white}
+- \setbeamercolor*{palette tertiary}{bg=myNewColorA, fg = white}
+- \setbeamercolor*{titlelike}{fg=myNewColorA}
+- \setbeamercolor*{title}{bg=myNewColorA, fg = white}
+- \setbeamercolor*{item}{fg=myNewColorA}
+- \setbeamercolor*{caption name}{fg=myNewColorA}
+- \usefonttheme{professionalfonts}
+always_allow_html: true
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Background
+
+L'objectif de ce premier envoi est de pouvoir se familiariser rapidement avec les packages nécessaires et très utilisés pour réaliser des cartes statiques, interactives ou dynamiques en utilisant R. L'idée étant de pouvoir faire des régressions spatiales, des analyses descriptives spatiales et bien plus. 
+
+
+## Les librairies les nécessaires
+
+Pour la réalisation de votre toute première carte sur R studio, les librairies suivantes sont nécessaires : 
+
+\begin{block}{Librairies}
+install.packages(c("sf", "raster", "dplyr",
+                    "spData", "cartography", "tmap",
+                    "leaflet", "mapview", "ggplot2", ))
+\end{block}
+
+Exécuter le code ci-dessus pour installer les librairies. 
+
+## Importer les librairies 
+
+Importez les librairies en exécutant le code suivant :
+
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(dplyr)       #: manipulation des données
+library(spData)      #: pour télécharger des données sp
+library(sf)          #: manipuler et faire des operations sur les cartes
+```
+
+
+## Réaliser votre toute première carte
+
+Une fois les librairies installées et importées, on peut dès à présent réaliser notre toute première carte. Exemple avec le code ci-dessous qui donne plusieurs cartes. 
+
+Le code ci-dessous permet de récupérer la carte du monde depuis la librairie **spData** et ensuite et le chemin d'accès du package qui contient le(s) fichier(s) avec l'extension **.gpkg**.
+
+\begin{block}{Code}
+world <- st$\_$read(system.file("shapes/world.gpkg", package="spData"))
+plot(world)
+\end{block}
+
+## Carte du Monde 
+
+```{r, echo=FALSE, include=FALSE, warning=FALSE, message=FALSE, fig.align='center', fig.dim=c(4,3)}
+wd <- st_read(system.file("shapes/world.gpkg", package="spData"))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.align='center', fig.dim=c(4,3)}
+plot(wd)
+```
+
+
+
+## Carte du Monde
+
+Oui ce n'est pas esthétique de tout renvoyer ! On peut modifier le code de façon à renvoyer un seul attribut. Supposons qu'on veuille uniquement les continents. Il suffit d'appliquer le code suivant : 
+
+\begin{block}{Code}
+plot(wd["continent"])
+\end{block}
+
+Un graphe s'affiche avec une légende 
+
+## 
+
+```{r, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.align='center', fig.dim=c(3.8, 3.5)}
+
+plot(wd["continent"], main="")
+
+```
+
+
+## Carte de l'Afrique 
+
+Maintenant nous allons récupérer la carte d'un continent fixe. Pour cela, on va filtrer notre jeu de donnée en récupérant les lignes pour lesquelles nous avons **Africa** au niveau de la colonne continent. 
+
+Pour connaitre le nom des continents, le nom d'un pays ou d'une région n'hésitez surtout à contrôler le contenu du dataframe en faisant un **view(wd)**
+
+## Carte de l'Afrique
+
+
+```{r, results='hide', message=FALSE, warning=FALSE, fig.align='center', fig.dim=c(3.3, 3.2)}
+afrique <- filter(wd, continent=="Africa")
+plot(afrique["name_long"], main="")
+```
+
+## Cartes et contours
+
+Jusqu'ici nous avons vu comment afficher des cartes, encore quelques étapes et nous pourrons récupérer la carte qu'on veut et faire la représentation graphique avec nos propres données. Dans toute la suite nous utiliserons les packages suivants : 
+
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+library(raster)      #: pour les Donnees matricelles
+library(cartography) #: réaliser des cartes
+library(geodata)     #: pour avoir des données géographiques
+library(RColorBrewer)#: pour les palettes de couleurs
+```
+
+
+## Carte du Cameroun 
+
+Le code ci-dessous permet de récupérer les informations sur les données spatiales du Cameroun
+
+- CMR désigne le code du Cameroun ; 
+- level le niveau de découpe (ici au niveau régional) ; 
+- path le chemin vers lequel on souhaite déposer le fichier ; 
+- version pour avoir le plus récent ; 
+- resolution pour l'échelle 
+
+
+```{r, echo=TRUE}
+cmr <- gadm("CMR", 
+            level=0, path="C:\\Users\\Julien\\Desktop\\JULIEN\\CARTOGRAPHIE", 
+            version="latest",
+            resolution = 1)
+```
+
+Il ne reste qu'à faire un plot et puis le tour est joué ! 
+
+##  Carte du Cameroun 
+
+Le code de la page suivante montre comment enlever les axes et faire un découpage en précisant au niveau de l'option **level = 1**
+
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE, fig.align='center', fig.dim=c(3.5, 2.5), fig.pos='h'}
+plot(cmr)
+```
+
+
+
+##  Carte du Cameroun 
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE, fig.align='center', fig.dim=c(3.8, 2.7)}
+cmr <- gadm("CMR",level=1,path="C:\\Users\\Julien\\Desktop\\JULIEN\\CARTOGRAPHIE", 
+            version="latest",resolution = 1)
+plot(cmr, axes = FALSE)
+```
+
+
+## Code des pays 
+
+Pour connaître le code d'un pays il suffit d'exécuter le code suivant : 
+
+\begin{block}{code ISO à 3 lettres}
+countries <- getData('ISO3')
+
+print(countries)
+\end{block}
+
+La procédure ci-dessus ainsi que celle sont les mêmes quelque soit le pays, le continent, la sous-région que vous aurez choisis.
+
+
+## Carte du Cameroun 
+
+
+Pour ajouter les noms des régions on convertit la base au format **sf** pour faire des manipulations. Pour voir le contenu du fichier ci-dessous n'hésitez pas à exécuter le code **view(cmr$\_$sf)** et pour afficher les noms des colonnes **names(cmr$\_$sf)**. 
+
+Pour le code suivant, on convertit le fichier **cmr** en fichier **sf**, ensuite on fait une représentation graphique en précisant que pour le fichier **cmr$\_$sf** on veut les noms des régions qui se trouvent dans la colonne **NAME$\$_1** et on met ensuite le titre. 
+
+
+##  
+
+```{r,  echo=TRUE, results='hide', message=FALSE, warning=FALSE, fig.align='center', fig.dim=c(3.8, 3.5), fig.pos='h'}
+cmr_sf <- st_as_sf(cmr, "sf") # Conversion au format sf
+plot(cmr_sf["NAME_1"], main = "Cameroun")
+```
+
+## Ajouter les noms des régions sur la carte
+
+On définit un vecteur de couleurs avec autant de couleurs qu'il y a de régions. 
+
+```{r}
+colors <- brewer.pal(n = length(unique(cmr_sf$NAME_1)), name = "Set1")
+plot(cmr_sf["NAME_1"], pal = colors, border="grey", axes = FALSE, main="",
+     key.pos=NULL)
+
+```
+
+
+## Ajouter les noms des régions sur la carte
+
+
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE, fig.align='center', fig.dim=c(3.8, 3.5), fig.pos='h'}
+cmr_sf <- st_as_sf(cmr)
+centroids <- st_centroid(cmr_sf) # On Calcul les centres
+plot(cmr_sf["NAME_1"], pal = colors, border="grey", axes = FALSE, main="",
+     key.pos=NULL) 
+```
+
+
+
+
+
+
+
+
+
+
+
